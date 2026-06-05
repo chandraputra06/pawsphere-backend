@@ -1,0 +1,341 @@
+// ============================================================
+// PawSphere - Prisma Schema (MySQL)
+// ============================================================
+// This schema defines the full data model for the PawSphere
+// platform as described in the project's ERD. In this first
+// iteration the application code only USES the `User` and
+// `AiTriageHistory` models (Auth + AI Chat Diagnosa). The
+// remaining models are defined ahead of time so that each
+// future module (Vet Connect, Marketplace, Paw Alert,
+// Shelter, Adoption, Care Funding) can be implemented without
+// another structural migration.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------------
+
+enum UserRole {
+  user // Pemilik hewan / pengguna umum / relawan
+  vet // Dokter hewan
+  shelter // Pengelola shelter
+  admin // Administrator
+}
+
+enum VerificationStatus {
+  pending
+  approved
+  rejected
+}
+
+enum UrgencyLevel {
+  green
+  yellow
+  red
+}
+
+// ------------------------------------------------------------
+// CORE: USER (used in this iteration)
+// ------------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid())
+  name         String   @db.VarChar(100)
+  email        String   @unique @db.VarChar(150)
+  phoneNumber  String?  @map("phone_number") @db.VarChar(20)
+  password     String   @db.VarChar(255)
+  role         UserRole @default(user)
+  isActive     Boolean  @default(true) @map("is_active")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  aiTriageHistories AiTriageHistory[]
+
+  @@map("users")
+}
+
+// ------------------------------------------------------------
+// AI CHAT DIAGNOSA (used in this iteration)
+// ------------------------------------------------------------
+
+model AiTriageHistory {
+  id                  String       @id @default(uuid())
+  userId              String       @map("user_id")
+  animalType          String       @map("animal_type") @db.VarChar(50)
+  age                 String       @db.VarChar(50)
+  symptoms            Json // stored as JSON array of strings
+  duration            String       @db.VarChar(100)
+  additionalCondition String?      @map("additional_condition") @db.Text
+  urgencyLevel        UrgencyLevel @map("urgency_level")
+  summary             String       @db.Text
+  firstAidAdvice      Json         @map("first_aid_advice") // JSON array of strings
+  recommendation      String       @db.Text
+  source              String       @default("stub") @db.VarChar(20) // "gemini" | "stub"
+  disclaimer          String       @db.Text
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+  createdAt           DateTime     @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("ai_triage_histories")
+}
+
+// ============================================================
+// THE MODELS BELOW ARE DEFINED FOR FUTURE ITERATIONS.
+// They are created by the migration but not yet used by code.
+// ============================================================
+
+// ------------------------------------------------------------
+// SHELTER (future: Shelter Dashboard)
+// ------------------------------------------------------------
+
+model Shelter {
+  id                String             @id @default(uuid())
+  ownerUserId       String             @map("owner_user_id")
+  name              String             @db.VarChar(150)
+  description       String             @db.Text
+  address           String             @db.VarChar(255)
+  phoneNumber       String             @map("phone_number") @db.VarChar(20)
+  capacity          Int                @default(0)
+  verificationStatus VerificationStatus @default(pending) @map("verification_status")
+  verifiedAt        DateTime?          @map("verified_at")
+  verifiedByAdminId String?            @map("verified_by_admin_id")
+  rejectionReason   String?            @map("rejection_reason") @db.Text
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  createdAt         DateTime           @default(now()) @map("created_at")
+
+  animals   Animal[]
+  campaigns DonationCampaign[]
+
+  @@index([ownerUserId])
+  @@map("shelters")
+}
+
+// ------------------------------------------------------------
+// ANIMAL / ADOPTION (future: Katalog Adopsi)
+// ------------------------------------------------------------
+
+model Animal {
+  id           String    @id @default(uuid())
+  shelterId    String    @map("shelter_id")
+  name         String    @db.VarChar(100)
+  species      String    @db.VarChar(50) // anjing, kucing, kelinci, ...
+  breed        String?   @db.VarChar(100)
+  age          String?   @db.VarChar(50)
+  gender       String?   @db.VarChar(20)
+  description  String?   @db.Text
+  imageUrl     String?   @map("image_url") @db.VarChar(255)
+  isVaccinated Boolean   @default(false) @map("is_vaccinated")
+  isSterilized Boolean   @default(false) @map("is_sterilized")
+  adoptionStatus String  @default("available") @map("adoption_status") @db.VarChar(30)
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  shelter      Shelter            @relation(fields: [shelterId], references: [id], onDelete: Cascade)
+  applications AdoptionApplication[]
+
+  @@index([shelterId])
+  @@map("animals")
+}
+
+model AdoptionApplication {
+  id              String   @id @default(uuid())
+  animalId        String   @map("animal_id")
+  applicantUserId String   @map("applicant_user_id")
+  fullName        String   @map("full_name") @db.VarChar(100)
+  phoneNumber     String   @map("phone_number") @db.VarChar(20)
+  email           String   @db.VarChar(150)
+  address         String   @db.Text
+  experience      String?  @db.Text
+  reason          String?  @db.Text
+  status          String   @default("submitted") @db.VarChar(30) // submitted, review, contacted, survey, done
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  animal Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+
+  @@index([animalId])
+  @@map("adoption_applications")
+}
+
+// ------------------------------------------------------------
+// VET CONNECT (future: Telekonsultasi)
+// ------------------------------------------------------------
+
+model VetProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique @map("user_id")
+  specialization String?  @db.VarChar(150)
+  sipNumber      String?  @map("sip_number") @db.VarChar(100) // Surat Izin Praktik
+  experienceYears Int     @default(0) @map("experience_years")
+  consultationFee Int     @default(0) @map("consultation_fee")
+  rating         Float    @default(0)
+  isAvailable    Boolean  @default(true) @map("is_available")
+  isVerified     Boolean  @default(false) @map("is_verified")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  consultations Consultation[]
+
+  @@map("vet_profiles")
+}
+
+model Consultation {
+  id           String   @id @default(uuid())
+  vetProfileId String   @map("vet_profile_id")
+  userId       String   @map("user_id")
+  method       String   @db.VarChar(20) // chat | video
+  status       String   @default("pending") @db.VarChar(30)
+  notes        String?  @db.Text
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  vetProfile    VetProfile     @relation(fields: [vetProfileId], references: [id], onDelete: Cascade)
+  prescriptions Prescription[]
+
+  @@index([vetProfileId])
+  @@index([userId])
+  @@map("consultations")
+}
+
+model Prescription {
+  id             String   @id @default(uuid())
+  consultationId String   @map("consultation_id")
+  notes          String   @db.Text
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  consultation Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@index([consultationId])
+  @@map("prescriptions")
+}
+
+// ------------------------------------------------------------
+// MARKETPLACE / APOTEK (future: Pet Care Marketplace)
+// ------------------------------------------------------------
+
+model Product {
+  id                String   @id @default(uuid())
+  name              String   @db.VarChar(150)
+  category          String   @db.VarChar(50) // obat, vitamin, makanan, ...
+  description       String?  @db.Text
+  price             Int      @default(0)
+  stock             Int      @default(0)
+  imageUrl          String?  @map("image_url") @db.VarChar(255)
+  requiresPrescription Boolean @default(false) @map("requires_prescription")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model Order {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  totalAmount     Int      @default(0) @map("total_amount")
+  shippingAddress String?  @map("shipping_address") @db.Text
+  paymentMethod   String?  @map("payment_method") @db.VarChar(50)
+  status          String   @default("pending") @db.VarChar(30)
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  items OrderItem[]
+
+  @@index([userId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String   @map("order_id")
+  productId String   @map("product_id")
+  quantity  Int      @default(1)
+  unitPrice Int      @map("unit_price")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+// ------------------------------------------------------------
+// PAW ALERT (future: Sistem Tanggap Rescue)
+// ------------------------------------------------------------
+
+model EmergencyReport {
+  id          String   @id @default(uuid())
+  reporterUserId String @map("reporter_user_id")
+  animalType  String   @map("animal_type") @db.VarChar(50)
+  condition   String   @db.VarChar(100)
+  description String?  @db.Text
+  photoUrl    String?  @map("photo_url") @db.VarChar(255)
+  latitude    Float?
+  longitude   Float?
+  status      String   @default("open") @db.VarChar(30) // open, responding, resolved
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([reporterUserId])
+  @@map("emergency_reports")
+}
+
+// ------------------------------------------------------------
+// CARE FUNDING (future: Donasi)
+// ------------------------------------------------------------
+
+model DonationCampaign {
+  id           String   @id @default(uuid())
+  shelterId    String   @map("shelter_id")
+  title        String   @db.VarChar(200)
+  description  String   @db.Text
+  imageUrl     String?  @map("image_url") @db.VarChar(255)
+  targetAmount Int      @map("target_amount")
+  raisedAmount Int      @default(0) @map("raised_amount")
+  urgency      String   @default("normal") @db.VarChar(20) // normal, mendesak, kritis
+  deadline     DateTime?
+  status       String   @default("active") @db.VarChar(20)
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  shelter   Shelter    @relation(fields: [shelterId], references: [id], onDelete: Cascade)
+  donations Donation[]
+
+  @@index([shelterId])
+  @@map("donation_campaigns")
+}
+
+model Donation {
+  id          String   @id @default(uuid())
+  campaignId  String   @map("campaign_id")
+  donorUserId String?  @map("donor_user_id")
+  donorName   String?  @map("donor_name") @db.VarChar(100)
+  type        String   @default("money") @db.VarChar(20) // money | goods
+  amount      Int      @default(0)
+  message     String?  @db.Text
+  isAnonymous Boolean  @default(false) @map("is_anonymous")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  campaign DonationCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@map("donations")
+}

@@ -1,0 +1,262 @@
+{
+  "info": {
+    "name": "PawSphere API",
+    "description": "Backend API untuk PawSphere - Auth + AI Chat Diagnosa.\n\nGunakan variabel {{baseUrl}} dan {{token}}. Jalankan request Login terlebih dahulu; token akan otomatis tersimpan ke variabel collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "triageId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data && res.data.token) {",
+                  "  pm.collectionVariables.set('token', res.data.token);",
+                  "  console.log('Token saved from register.');",
+                  "}",
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chandra Putra\",\n  \"email\": \"chandra@pawsphere.id\",\n  \"password\": \"secret123\",\n  \"phone_number\": \"081234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data && res.data.token) {",
+                  "  pm.collectionVariables.set('token', res.data.token);",
+                  "  console.log('Token saved from login.');",
+                  "}",
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"chandra@pawsphere.id\",\n  \"password\": \"secret123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login (Seeded Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data && res.data.token) {",
+                  "  pm.collectionVariables.set('token', res.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@pawsphere.id\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Profile (me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Chat Diagnosa",
+      "item": [
+        {
+          "name": "Create Triage (Yellow - muntah)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data && res.data.id) {",
+                  "  pm.collectionVariables.set('triageId', res.data.id);",
+                  "}",
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"animal_type\": \"Kucing\",\n  \"age\": \"2 tahun\",\n  \"symptoms\": [\"muntah\", \"lemas\", \"tidak mau makan\"],\n  \"duration\": \"sejak pagi\",\n  \"additional_condition\": \"baru pulang dari luar rumah\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-chat/triage",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-chat", "triage"]
+            }
+          }
+        },
+        {
+          "name": "Create Triage (Red - kejang)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"animal_type\": \"Anjing\",\n  \"age\": \"1 tahun\",\n  \"symptoms\": [\"kejang\", \"tidak sadar\"],\n  \"duration\": \"10 menit yang lalu\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-chat/triage",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-chat", "triage"]
+            }
+          }
+        },
+        {
+          "name": "Create Triage (Green - ringan)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"animal_type\": \"Kelinci\",\n  \"age\": \"6 bulan\",\n  \"symptoms\": [\"gatal ringan\"],\n  \"duration\": \"1 hari\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-chat/triage",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-chat", "triage"]
+            }
+          }
+        },
+        {
+          "name": "Get My Triage Histories",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ai-chat/histories",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-chat", "histories"]
+            }
+          }
+        },
+        {
+          "name": "Get Triage By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ai-chat/histories/{{triageId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-chat", "histories", "{{triageId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
