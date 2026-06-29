@@ -8,8 +8,7 @@ const errorHandler = require("./middlewares/error-handler");
 
 const app = express();
 
-// --- CORS ---
-// Allow either a wildcard or a comma-separated list of origins.
+
 const corsOrigins =
   env.corsOrigin === "*"
     ? "*"

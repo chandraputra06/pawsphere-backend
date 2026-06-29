@@ -4,6 +4,8 @@ const {
   registerUser,
   loginUser,
   getUserProfile,
+  updateUserProfile,
+  changeUserPassword,
 } = require("../services/auth.service");
 
 // POST /api/auth/register
@@ -37,8 +39,35 @@ const getMe = asyncHandler(async (req, res) => {
   return successResponse(res, 200, "Profile retrieved successfully", user);
 });
 
+// PATCH /api/auth/me  (requires authentication)
+const updateMe = asyncHandler(async (req, res) => {
+  const { name, phone_number, avatar_url } = req.body;
+
+  const user = await updateUserProfile(req.user.id, {
+    name,
+    phoneNumber: phone_number,
+    avatarUrl: avatar_url,
+  });
+
+  return successResponse(res, 200, "Profile updated successfully", user);
+});
+
+// PATCH /api/auth/password  (requires authentication)
+const changePassword = asyncHandler(async (req, res) => {
+  const { current_password, new_password } = req.body;
+
+  await changeUserPassword(req.user.id, {
+    currentPassword: current_password,
+    newPassword: new_password,
+  });
+
+  return successResponse(res, 200, "Password updated successfully", null);
+});
+
 module.exports = {
   register,
   login,
   getMe,
+  updateMe,
+  changePassword,
 };

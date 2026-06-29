@@ -4,8 +4,12 @@ const {
   createTriage,
   getMyTriageHistories,
   getTriageById,
+  chatMessage,
 } = require("../controllers/ai-chat.controller");
-const { createTriageValidator } = require("../validators/ai-chat.validator");
+const {
+  createTriageValidator,
+  chatValidator,
+} = require("../validators/ai-chat.validator");
 const validate = require("../middlewares/validate");
 const { authenticate } = require("../middlewares/auth");
 
@@ -19,6 +23,7 @@ router.post(
   validate,
   createTriage
 );
+router.post("/chat", authenticate, chatValidator, validate, chatMessage);
 router.get("/histories", authenticate, getMyTriageHistories);
 router.get("/histories/:id", authenticate, getTriageById);
 

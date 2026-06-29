@@ -1,6 +1,6 @@
 const { body } = require("express-validator");
 
-const VALID_ROLES = ["user", "vet", "shelter", "admin"];
+const SELF_REGISTER_ROLES = ["user", "vet", "shelter"];
 
 const registerValidator = [
   body("name")
@@ -32,8 +32,8 @@ const registerValidator = [
 
   body("role")
     .optional({ values: "falsy" })
-    .isIn(VALID_ROLES)
-    .withMessage(`Role must be one of: ${VALID_ROLES.join(", ")}`),
+    .isIn(SELF_REGISTER_ROLES)
+    .withMessage(`Role must be one of: ${SELF_REGISTER_ROLES.join(", ")}`),
 ];
 
 const loginValidator = [
@@ -48,7 +48,42 @@ const loginValidator = [
   body("password").notEmpty().withMessage("Password is required"),
 ];
 
+const updateProfileValidator = [
+  body("name")
+    .optional({ values: "falsy" })
+    .trim()
+    .isLength({ min: 3, max: 100 })
+    .withMessage("Name must be between 3 and 100 characters long"),
+
+  body("phone_number")
+    .optional({ values: "falsy" })
+    .trim()
+    .isLength({ min: 8, max: 20 })
+    .withMessage("Phone number must be between 8 and 20 characters long"),
+
+  body("avatar_url")
+    .optional({ nullable: true })
+    .isString()
+    .withMessage("Avatar must be a string")
+    .isLength({ max: 3000000 })
+    .withMessage("Avatar image is too large"),
+];
+
+const changePasswordValidator = [
+  body("current_password")
+    .notEmpty()
+    .withMessage("Current password is required"),
+
+  body("new_password")
+    .notEmpty()
+    .withMessage("New password is required")
+    .isLength({ min: 6, max: 100 })
+    .withMessage("New password must be at least 6 characters long"),
+];
+
 module.exports = {
   registerValidator,
   loginValidator,
+  updateProfileValidator,
+  changePasswordValidator,
 };

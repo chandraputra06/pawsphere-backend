@@ -4,6 +4,7 @@ const {
   createAiTriage,
   findUserTriageHistories,
   findTriageById,
+  chatWithAi,
 } = require("../services/ai-chat.service");
 
 // POST /api/ai-chat/triage  (requires authentication)
@@ -41,16 +42,21 @@ const getTriageById = asyncHandler(async (req, res) => {
 
   const triage = await findTriageById(id, req.user.id);
 
-  return successResponse(
-    res,
-    200,
-    "AI triage retrieved successfully",
-    triage
-  );
+  return successResponse(res, 200, "AI triage retrieved successfully", triage);
+});
+
+// POST /api/ai-chat/chat  (requires authentication)
+const chatMessage = asyncHandler(async (req, res) => {
+  const { messages } = req.body;
+
+  const result = await chatWithAi(messages);
+
+  return successResponse(res, 200, "AI reply generated successfully", result);
 });
 
 module.exports = {
   createTriage,
   getMyTriageHistories,
   getTriageById,
+  chatMessage,
 };

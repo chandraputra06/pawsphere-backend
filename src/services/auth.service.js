@@ -90,9 +90,45 @@ const getUserProfile = async (userId) => {
   return sanitizeUser(user);
 };
 
+const updateUserProfile = async (userId, { name, phoneNumber, avatarUrl }) => {
+  const data = {};
+  if (name !== undefined) data.name = name;
+  if (phoneNumber !== undefined) data.phoneNumber = phoneNumber || null;
+  if (avatarUrl !== undefined) data.avatarUrl = avatarUrl || null;
+
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data,
+  });
+
+  return sanitizeUser(user);
+};
+
+const changeUserPassword = async (userId, { currentPassword, newPassword }) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw ApiError.notFound("User not found");
+  }
+
+  const isValid = await bcrypt.compare(currentPassword, user.password);
+  if (!isValid) {
+    throw ApiError.unauthorized("Password saat ini salah");
+  }
+
+  const hashed = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { password: hashed },
+  });
+
+  return { success: true };
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
+  updateUserProfile,
+  changeUserPassword,
   sanitizeUser,
 };

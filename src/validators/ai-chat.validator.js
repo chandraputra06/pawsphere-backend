@@ -38,6 +38,23 @@ const createTriageValidator = [
     .withMessage("Additional condition must be at most 1000 characters long"),
 ];
 
+const chatValidator = [
+  body("messages")
+    .isArray({ min: 1 })
+    .withMessage("messages must be a non-empty array"),
+
+  body("messages.*.role")
+    .trim()
+    .notEmpty()
+    .withMessage("Each message must have a role"),
+
+  body("messages.*.content")
+    .trim()
+    .notEmpty()
+    .withMessage("Each message must have content"),
+];
+
 module.exports = {
   createTriageValidator,
+  chatValidator,
 };

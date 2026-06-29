@@ -1,6 +1,6 @@
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/api-error");
-const { generateTriage } = require("./gemini.service");
+const { generateTriage, generateChatReply } = require("./gemini.service");
 
 // Maps a DB row to a clean API response shape (snake_case fields).
 const mapTriageToResponse = (row) => ({
@@ -79,8 +79,12 @@ const findTriageById = async (id, userId) => {
   return mapTriageToResponse(row);
 };
 
+// Free-form conversational reply (does not persist, like a normal chat).
+const chatWithAi = async (messages) => generateChatReply({ messages });
+
 module.exports = {
   createAiTriage,
   findUserTriageHistories,
   findTriageById,
+  chatWithAi,
 };
