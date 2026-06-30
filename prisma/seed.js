@@ -80,6 +80,15 @@ const seedVets = [
   },
 ];
 
+const seedProducts = [
+  { name: "Amoxicillin 250mg Tablet", category: "obat", price: 45000, stock: 50, imageUrl: "/src/assets/product/Amoxicillin.png", requiresPrescription: true, description: "Antibiotik untuk infeksi bakteri pada hewan." },
+  { name: "Probiotik Paste Premium", category: "vitamin", price: 89000, stock: 40, imageUrl: "/src/assets/product/Probiotik.png", requiresPrescription: false, description: "Menjaga kesehatan saluran cerna hewan." },
+  { name: "Royal Canin Indoor Adult", category: "makanan", price: 185000, stock: 30, imageUrl: "/src/assets/product/Royal Canin.png", requiresPrescription: false, description: "Makanan kucing dewasa indoor." },
+  { name: "Vitamin B Complex Drops", category: "vitamin", price: 65000, stock: 60, imageUrl: "/src/assets/product/Vitamin B.png", requiresPrescription: false, description: "Suplemen vitamin B untuk nafsu makan." },
+  { name: "Anti-Tick & Flea Shampoo", category: "obat", price: 55000, stock: 45, imageUrl: "/src/assets/product/Shampoo.png", requiresPrescription: false, description: "Shampo anti kutu dan caplak." },
+  { name: "Ivermectin 1% Injection", category: "obat", price: 35000, stock: 25, imageUrl: "/src/assets/product/Ivermectin.png", requiresPrescription: true, description: "Obat antiparasit injeksi." },
+];
+
 async function main() {
   console.log("Seeding database...");
 
@@ -112,6 +121,16 @@ async function main() {
     } catch (e) {
       console.error(`  ! GAGAL di ${vet.email}:`, e.message);
     }
+  }
+
+  for (const prod of seedProducts) {
+    const existing = await prisma.product.findFirst({ where: { name: prod.name } });
+    if (existing) {
+      await prisma.product.update({ where: { id: existing.id }, data: { ...prod } });
+    } else {
+      await prisma.product.create({ data: { ...prod } });
+    }
+    console.log(`  - product | ${prod.name}`);
   }
 
   console.log("Seeding complete.");

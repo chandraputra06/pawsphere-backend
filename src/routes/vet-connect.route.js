@@ -9,6 +9,8 @@ const {
   getMessages,
   postMessage,
   patchStatus,
+  getRx,
+  putRx,
 } = require("../controllers/vet-connect.controller");
 const {
   createConsultationValidator,
@@ -56,5 +58,9 @@ router.patch(
   validate,
   patchStatus
 );
+
+// E-Resep
+router.get("/consultations/:id/prescription", authenticate, getRx);
+router.put("/consultations/:id/prescription", authenticate, authorize("vet"), putRx);
 
 module.exports = router;

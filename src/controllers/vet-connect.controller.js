@@ -9,6 +9,8 @@ const {
   listMessages,
   sendMessage,
   updateStatus,
+  getPrescription,
+  savePrescription,
 } = require("../services/vet-connect.service");
 
 // GET /api/vet-connect/vets  (public)
@@ -67,6 +69,15 @@ const patchStatus = asyncHandler(async (req, res) => {
   return successResponse(res, 200, "Status updated successfully", updated);
 });
 
+const getRx = asyncHandler(async (req, res) => {
+  const rx = await getPrescription(req.params.id, req.user.id);
+  return successResponse(res, 200, "Prescription retrieved", rx);
+});
+const putRx = asyncHandler(async (req, res) => {
+  const rx = await savePrescription(req.params.id, req.user.id, req.body.notes);
+  return successResponse(res, 200, "Prescription saved", rx);
+});
+
 module.exports = {
   getVets,
   getVet,
@@ -76,4 +87,6 @@ module.exports = {
   getMessages,
   postMessage,
   patchStatus,
+  getRx,
+  putRx,
 };

@@ -8,6 +8,7 @@ const { successResponse } = require("../utils/response");
 const pawAlertRoutes = require("./paw-alert.route");
 const adoptionRoutes = require("./adoption.route");
 const donationRoutes = require("./donation.route");
+const marketplaceRoutes = require("./marketplace.route");
 
 const router = express.Router();
 
@@ -29,6 +30,7 @@ router.use("/vet-connect", vetConnectRoutes);
 router.use("/paw-alert", pawAlertRoutes);
 router.use("/adoption", adoptionRoutes);
 router.use("/donation", donationRoutes);
+router.use("/marketplace", marketplaceRoutes);
 
 // ----------------------------------------------------------------
 // EXAMPLE: role-protected endpoints.

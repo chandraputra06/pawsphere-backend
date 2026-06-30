@@ -174,6 +174,32 @@ const updateStatus = async (consultationId, vetUserId, status) => {
   });
 };
 
+// ---------- Prescription (E-Resep) ----------
+const getPrescription = async (consultationId, viewerId) => {
+  const c = await loadFull(consultationId);
+  if (!c) throw ApiError.notFound("Konsultasi tidak ditemukan");
+  if (!isParticipant(c, viewerId)) throw ApiError.forbidden("Akses ditolak");
+
+  const presc = await prisma.prescription.findFirst({ where: { consultationId } });
+  if (!presc) return null;
+  return { id: presc.id, notes: presc.notes, created_at: presc.createdAt, updated_at: presc.updatedAt };
+};
+
+const savePrescription = async (consultationId, vetUserId, notes) => {
+  const c = await loadFull(consultationId);
+  if (!c) throw ApiError.notFound("Konsultasi tidak ditemukan");
+  if (c.vetProfile?.userId !== vetUserId) {
+    throw ApiError.forbidden("Hanya dokter terkait yang dapat menulis resep");
+  }
+
+  const existing = await prisma.prescription.findFirst({ where: { consultationId } });
+  const presc = existing
+    ? await prisma.prescription.update({ where: { id: existing.id }, data: { notes } })
+    : await prisma.prescription.create({ data: { consultationId, notes } });
+
+  return { id: presc.id, notes: presc.notes, created_at: presc.createdAt, updated_at: presc.updatedAt };
+};
+
 module.exports = {
   listVets,
   getVetById,
@@ -183,4 +209,6 @@ module.exports = {
   listMessages,
   sendMessage,
   updateStatus,
+  getPrescription,
+  savePrescription,
 };
