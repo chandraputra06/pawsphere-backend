@@ -2,13 +2,16 @@ const app = require("./app");
 const prisma = require("./config/prisma");
 const { env, isGeminiEnabled } = require("./config/env");
 
-const server = app.listen(env.port, () => {
+// Railway menyediakan PORT lewat environment; wajib bind ke 0.0.0.0.
+const PORT = process.env.PORT || env.port;
+
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log("============================================");
   console.log("  PawSphere Backend");
   console.log("============================================");
   console.log(`  Environment : ${env.nodeEnv}`);
-  console.log(`  Server      : http://localhost:${env.port}`);
-  console.log(`  Health      : http://localhost:${env.port}/api/health`);
+  console.log(`  Server      : listening on port ${PORT}`);
+  console.log(`  Health      : /api/health`);
   console.log(
     `  AI Engine   : ${isGeminiEnabled ? "Gemini API" : "Keyword stub (fallback)"}`
   );
