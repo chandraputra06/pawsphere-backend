@@ -225,6 +225,8 @@ model ConsultationMessage {
   consultationId String   @map("consultation_id")
   senderId       String   @map("sender_id")
   content        String   @db.Text
+  type           String   @default("text") @db.VarChar(20) // text | image | audio
+  attachmentUrl  String?  @map("attachment_url") @db.LongText // base64 data URL
   createdAt      DateTime @default(now()) @map("created_at")
 
   consultation Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
