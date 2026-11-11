@@ -45,13 +45,17 @@ const getTriageById = asyncHandler(async (req, res) => {
   return successResponse(res, 200, "AI triage retrieved successfully", triage);
 });
 
-// POST /api/ai-chat/chat  (requires authentication)
+// POST /api/ai-chat/chat  (guest diizinkan s/d 5 sesi, user login unlimited)
 const chatMessage = asyncHandler(async (req, res) => {
   const { messages } = req.body;
 
   const result = await chatWithAi(messages);
+  const guest = res.locals.aiGuest || null; // null utk user login
 
-  return successResponse(res, 200, "AI reply generated successfully", result);
+  return successResponse(res, 200, "AI reply generated successfully", {
+    ...result,
+    guest,
+  });
 });
 
 module.exports = {

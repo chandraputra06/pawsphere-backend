@@ -11,11 +11,12 @@ const {
   chatValidator,
 } = require("../validators/ai-chat.validator");
 const validate = require("../middlewares/validate");
-const { authenticate } = require("../middlewares/auth");
+const { authenticate, optionalAuthenticate } = require("../middlewares/auth");
+const { guestAiMeter } = require("../middlewares/guest-ai-meter");
 
 const router = express.Router();
 
-// All AI Chat Diagnosa endpoints require an authenticated user.
+// Triage & histories: wajib login.
 router.post(
   "/triage",
   authenticate,
@@ -23,8 +24,17 @@ router.post(
   validate,
   createTriage
 );
-router.post("/chat", authenticate, chatValidator, validate, chatMessage);
 router.get("/histories", authenticate, getMyTriageHistories);
 router.get("/histories/:id", authenticate, getTriageById);
+
+// Chat: guest boleh 5 sesi (di-meter), user login unlimited.
+router.post(
+  "/chat",
+  optionalAuthenticate,
+  chatValidator,
+  validate,
+  guestAiMeter,
+  chatMessage
+);
 
 module.exports = router;

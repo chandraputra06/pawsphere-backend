@@ -366,3 +366,19 @@ model Donation {
   @@index([campaignId])
   @@map("donations")
 }
+
+// ------------------------------------------------------------
+// GUEST AI USAGE (metering AI chat gratis untuk guest/tanpa login)
+// ------------------------------------------------------------
+// 1 baris = 1 "sesi" (percakapan) yang dimulai guest. Dibatasi
+// lewat middleware guestAiMeter: 5 sesi / 24 jam, lalu wajib login.
+model GuestAiUsage {
+  id        String   @id @default(uuid())
+  guestId   String   @map("guest_id") @db.VarChar(100)
+  sessionId String   @map("session_id") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([guestId, sessionId])
+  @@index([guestId, createdAt])
+  @@map("guest_ai_usages")
+}

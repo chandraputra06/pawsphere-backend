@@ -16,6 +16,11 @@ const env = {
     model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
   },
 
+  ai: {
+    guestSessionLimit: Number(process.env.GUEST_AI_SESSION_LIMIT) || 5,
+    guestWindowHours: Number(process.env.GUEST_AI_WINDOW_HOURS) || 24,
+  },
+
   corsOrigin: process.env.CORS_ORIGIN || "*",
 };
 

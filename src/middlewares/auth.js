@@ -63,7 +63,27 @@ const authorize = (...allowedRoles) => {
   };
 };
 
+// Seperti authenticate, TAPI tidak menolak kalau token tidak ada/invalid.
+// Kalau token valid -> set req.user. Kalau tidak -> lanjut sebagai guest.
+const optionalAuthenticate = (req, res, next) => {
+  const authHeader = req.headers.authorization || "";
+
+  if (!authHeader.startsWith("Bearer ")) return next(); // guest
+
+  const token = authHeader.slice(7).trim();
+  if (!token) return next(); // guest
+
+  try {
+    const decoded = jwt.verify(token, env.jwt.secret);
+    req.user = decoded; // { id, email, role }
+  } catch (error) {
+    req.user = undefined; // token kedaluwarsa/invalid -> perlakukan sbg guest
+  }
+  return next();
+};
+
 module.exports = {
   authenticate,
   authorize,
+  optionalAuthenticate,
 };
