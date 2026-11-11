@@ -56,9 +56,14 @@ const getMessages = asyncHandler(async (req, res) => {
 });
 
 // POST /api/vet-connect/consultations/:id/messages  (auth - participant)
+// POST /api/vet-connect/consultations/:id/messages  (auth - participant)
 const postMessage = asyncHandler(async (req, res) => {
-  const { content } = req.body;
-  const message = await sendMessage(req.params.id, req.user.id, content);
+  const { content, type, attachmentUrl } = req.body;
+  const message = await sendMessage(req.params.id, req.user.id, {
+    content,
+    type,
+    attachmentUrl,
+  });
   return successResponse(res, 201, "Message sent successfully", message);
 });
 
