@@ -26,7 +26,7 @@ const generateToken = (user) => {
   );
 };
 
-const registerUser = async ({ name, email, password, phoneNumber, role }) => {
+const registerUser = async ({ name, email, password, phoneNumber }) => {
   const existing = await prisma.user.findUnique({ where: { email } });
 
   if (existing) {
@@ -41,7 +41,7 @@ const registerUser = async ({ name, email, password, phoneNumber, role }) => {
       email,
       password: hashedPassword,
       phoneNumber: phoneNumber || null,
-      role: role || "user",
+      role: "user", // role baru selalu 'user'; role lain (vet/klinik/admin) di-set admin
     },
   });
 

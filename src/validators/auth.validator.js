@@ -1,7 +1,5 @@
 const { body } = require("express-validator");
 
-const SELF_REGISTER_ROLES = ["user", "vet", "shelter"];
-
 const registerValidator = [
   body("name")
     .trim()
@@ -29,11 +27,6 @@ const registerValidator = [
     .trim()
     .isLength({ min: 8, max: 20 })
     .withMessage("Phone number must be between 8 and 20 characters long"),
-
-  body("role")
-    .optional({ values: "falsy" })
-    .isIn(SELF_REGISTER_ROLES)
-    .withMessage(`Role must be one of: ${SELF_REGISTER_ROLES.join(", ")}`),
 ];
 
 const loginValidator = [

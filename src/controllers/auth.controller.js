@@ -10,14 +10,13 @@ const {
 
 // POST /api/auth/register
 const register = asyncHandler(async (req, res) => {
-  const { name, email, password, phone_number, role } = req.body;
+  const { name, email, password, phone_number } = req.body;
 
   const result = await registerUser({
     name,
     email,
     password,
     phoneNumber: phone_number,
-    role,
   });
 
   return successResponse(res, 201, "User registered successfully", result);
