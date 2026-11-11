@@ -4,6 +4,6 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "npm start"
+    "startCommand": "prisma migrate deploy && (node prisma/seedClinics.js || true) && node src/server.js"
   }
 }
