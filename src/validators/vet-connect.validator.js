@@ -15,12 +15,28 @@ const createConsultationValidator = [
 ];
 
 const messageValidator = [
+  body("type")
+    .optional({ values: "falsy" })
+    .isIn(["text", "image", "audio"])
+    .withMessage("type must be text, image, or audio"),
   body("content")
-    .trim()
-    .notEmpty()
-    .withMessage("content is required")
+    .optional({ values: "falsy" })
+    .isString()
     .isLength({ max: 5000 })
     .withMessage("content is too long"),
+  body("attachmentUrl")
+    .optional({ values: "falsy" })
+    .isString()
+    .withMessage("attachmentUrl must be a string"),
+  body().custom((value) => {
+    const hasText = value.content && String(value.content).trim().length > 0;
+    const hasAttachment =
+      value.attachmentUrl && String(value.attachmentUrl).length > 0;
+    if (!hasText && !hasAttachment) {
+      throw new Error("Pesan harus berisi teks atau lampiran");
+    }
+    return true;
+  }),
 ];
 
 const statusValidator = [

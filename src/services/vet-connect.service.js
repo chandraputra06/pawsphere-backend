@@ -128,19 +128,25 @@ const listMessages = async (consultationId, viewerId) => {
   return rows.map((m) => ({
     id: m.id,
     text: m.content,
+    type: m.type,
+    attachmentUrl: m.attachmentUrl,
     time: fmtTime(m.createdAt),
     senderId: m.senderId,
     isOwn: m.senderId === viewerId,
   }));
 };
 
-const sendMessage = async (consultationId, senderId, content) => {
+const sendMessage = async (
+  consultationId,
+  senderId,
+  { content = "", type = "text", attachmentUrl = null }
+) => {
   const c = await loadFull(consultationId);
   if (!c) throw ApiError.notFound("Konsultasi tidak ditemukan");
   if (!isParticipant(c, senderId)) throw ApiError.forbidden("Akses ditolak");
 
   const message = await prisma.consultationMessage.create({
-    data: { consultationId, senderId, content },
+    data: { consultationId, senderId, content: content || "", type, attachmentUrl },
   });
 
   // When the vet replies to a pending consultation, it becomes active.
@@ -155,6 +161,8 @@ const sendMessage = async (consultationId, senderId, content) => {
   return {
     id: message.id,
     text: message.content,
+    type: message.type,
+    attachmentUrl: message.attachmentUrl,
     time: fmtTime(message.createdAt),
     senderId,
     isOwn: true,
