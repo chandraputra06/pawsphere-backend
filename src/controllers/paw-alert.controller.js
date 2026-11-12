@@ -6,6 +6,7 @@ const {
   listActiveReports,
   updateReportStatus,
   listShelters,
+  listMapReports,
 } = require("../services/paw-alert.service");
 
 // POST /api/paw-alert/reports  (auth)
@@ -47,4 +48,10 @@ const getShelters = asyncHandler(async (req, res) => {
   return successResponse(res, 200, "Shelters retrieved successfully", shelters);
 });
 
-module.exports = { postReport, getMyReports, getActiveReports, patchStatus, getShelters };
+// GET /api/paw-alert/reports/map  (public - laporan aktif tanpa PII)
+const getMapReports = asyncHandler(async (req, res) => {
+  const reports = await listMapReports();
+  return successResponse(res, 200, "Map reports retrieved successfully", reports);
+});
+
+module.exports = { postReport, getMyReports, getActiveReports, patchStatus, getShelters, getMapReports };
