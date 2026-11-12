@@ -102,10 +102,32 @@ const listShelters = async () => {
   return rows.map(mapShelter);
 };
 
+// Laporan aktif untuk peta — TANPA data pelapor (publik).
+const listMapReports = async () => {
+  const rows = await prisma.emergencyReport.findMany({
+    where: {
+      status: { in: ["open", "responding"] },
+      latitude: { not: null },
+      longitude: { not: null },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    animal_type: r.animalType,
+    condition: r.condition,
+    status: r.status,
+    latitude: r.latitude,
+    longitude: r.longitude,
+    created_at: r.createdAt,
+  }));
+};
+
 module.exports = {
   createReport,
   listMyReports,
   listActiveReports,
   updateReportStatus,
   listShelters,
+  listMapReports,
 };
