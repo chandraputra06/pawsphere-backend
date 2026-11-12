@@ -23,6 +23,18 @@ const mapReport = (r) => ({
     : null,
 });
 
+// Bentuk shelter agar cocok dengan ShelterCard di frontend.
+const mapShelter = (s) => ({
+  id: s.id,
+  name: s.name,
+  address: s.address,
+  status: s.isOpenNow ? "Buka" : "Tutup",
+  hours: s.operatingHours || "-",
+  phone: (s.phoneNumber || "").replace(/[^0-9]/g, ""),
+  lat: s.latitude,
+  lng: s.longitude,
+});
+
 const createReport = async ({
   reporterUserId,
   animalType,
@@ -56,7 +68,6 @@ const listMyReports = async (userId) => {
   return rows.map(mapReport);
 };
 
-// For shelters/admin: active reports to respond to.
 const listActiveReports = async () => {
   const rows = await prisma.emergencyReport.findMany({
     where: { status: { in: ["open", "responding"] } },
@@ -78,9 +89,23 @@ const updateReportStatus = async (id, status) => {
   return mapReport(report);
 };
 
+// Direktori shelter mitra (yang terverifikasi & punya koordinat).
+const listShelters = async () => {
+  const rows = await prisma.shelter.findMany({
+    where: {
+      verificationStatus: "approved",
+      latitude: { not: null },
+      longitude: { not: null },
+    },
+    orderBy: { name: "asc" },
+  });
+  return rows.map(mapShelter);
+};
+
 module.exports = {
   createReport,
   listMyReports,
   listActiveReports,
   updateReportStatus,
+  listShelters,
 };

@@ -5,12 +5,16 @@ const {
   getMyReports,
   getActiveReports,
   patchStatus,
+  getShelters,
 } = require("../controllers/paw-alert.controller");
 const { createReportValidator, statusValidator } = require("../validators/paw-alert.validator");
 const validate = require("../middlewares/validate");
 const { authenticate, authorize } = require("../middlewares/auth");
 
 const router = express.Router();
+
+// Public: direktori shelter (tampil juga sebelum login).
+router.get("/shelters", getShelters);
 
 // Anyone logged in can report.
 router.post("/reports", authenticate, createReportValidator, validate, postReport);

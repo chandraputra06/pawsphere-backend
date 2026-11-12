@@ -5,6 +5,7 @@ const {
   listMyReports,
   listActiveReports,
   updateReportStatus,
+  listShelters,
 } = require("../services/paw-alert.service");
 
 // POST /api/paw-alert/reports  (auth)
@@ -40,4 +41,10 @@ const patchStatus = asyncHandler(async (req, res) => {
   return successResponse(res, 200, "Report status updated successfully", report);
 });
 
-module.exports = { postReport, getMyReports, getActiveReports, patchStatus };
+// GET /api/paw-alert/shelters  (public - direktori shelter terdekat)
+const getShelters = asyncHandler(async (req, res) => {
+  const shelters = await listShelters();
+  return successResponse(res, 200, "Shelters retrieved successfully", shelters);
+});
+
+module.exports = { postReport, getMyReports, getActiveReports, patchStatus, getShelters };
