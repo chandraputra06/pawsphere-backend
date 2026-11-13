@@ -1,9 +1,11 @@
 const crypto = require("crypto");
 const prisma = require("../config/prisma");
+const { env } = require("../config/env");
 const ApiError = require("../utils/api-error");
 const {
   amountToMinorUnits,
   createQrisRedirect,
+  getQrisTransactionStatus,
   verifyNotificationSignature,
 } = require("./midtrans.service");
 const {
@@ -15,6 +17,20 @@ const {
 
 const PLATFORM_FEE = 5000;
 const HOME_VISIT_FEE = 10000;
+const snapScriptUrl = env.midtrans.isProduction
+  ? "https://app.midtrans.com/snap/snap.js"
+  : "https://app.sandbox.midtrans.com/snap/snap.js";
+
+const toReservationResponse = (reservation) => ({
+  ...toPublicReservation(reservation),
+  ...(reservation.paymentMethod === "qris"
+    ? {
+        snapToken: reservation.snapToken,
+        snapClientKey: env.midtrans.clientKey,
+        snapScriptUrl,
+      }
+    : {}),
+});
 
 const normalizeOptional = (value) => {
   const normalized = typeof value === "string" ? value.trim() : "";
@@ -103,7 +119,7 @@ const replayIdempotentRequest = (existing, userId, fingerprint) => {
     );
   }
 
-  return toPublicReservation(existing);
+  return toReservationResponse(existing);
 };
 
 const createReservation = async ({
@@ -141,6 +157,7 @@ const createReservation = async ({
     address: normalizeOptional(input.address),
     phone: normalizeOptional(input.phone) || user.phoneNumber,
   };
+  const { clinicId: reservationClinicId, ...reservationData } = normalized;
   const fingerprint = createRequestFingerprint(normalized);
 
   const existing = await getByIdempotencyKey(idempotencyKey);
@@ -171,7 +188,7 @@ const createReservation = async ({
     reservation = await prisma.clinicReservation.create({
       data: {
         id: reservationId,
-        ...normalized,
+        ...reservationData,
         estimatedTotal: amount,
         bookingCode,
         paymentMethod: normalized.paymentMethod,
@@ -181,6 +198,8 @@ const createReservation = async ({
         idempotencyFingerprint: fingerprint,
         midtransOrderId,
         queueNumber: normalized.serviceType === "konsultasi" ? "A-012" : null,
+        clinic: { connect: { id: reservationClinicId } },
+        user: { connect: { id: userId } },
       },
       include: { clinic: true },
     });
@@ -199,7 +218,7 @@ const createReservation = async ({
   }
 
   if (normalized.paymentMethod === "cash") {
-    return toPublicReservation(reservation);
+    return toReservationResponse(reservation);
   }
 
   try {
@@ -224,7 +243,7 @@ const createReservation = async ({
     throw error;
   }
 
-  return toPublicReservation(reservation);
+  return toReservationResponse(reservation);
 };
 
 const getReservation = async (reservationId, userId) => {
@@ -233,7 +252,7 @@ const getReservation = async (reservationId, userId) => {
     include: { clinic: true },
   });
   if (!reservation) throw ApiError.notFound("Reservasi tidak ditemukan");
-  return toPublicReservation(reservation);
+  return toReservationResponse(reservation);
 };
 
 const updateReservationAddress = async (reservationId, userId, { address, phone }) => {
@@ -256,32 +275,21 @@ const updateReservationAddress = async (reservationId, userId, { address, phone 
     data: { address: address.trim(), phone: phone.trim() },
     include: { clinic: true },
   });
-  return toPublicReservation(updated);
+  return toReservationResponse(updated);
 };
 
-const applyMidtransNotification = async (notification) => {
-  if (!verifyNotificationSignature(notification)) {
-    throw ApiError.unauthorized("Signature notifikasi Midtrans tidak valid");
-  }
-
-  const orderId = notification.order_id;
-  const reservation = await prisma.clinicReservation.findUnique({
-    where: { midtransOrderId: orderId },
-  });
-
-  if (!reservation) return { received: true };
-
-  const receivedAmount = amountToMinorUnits(notification.gross_amount);
+const applyProviderPaymentStatus = async (reservation, providerStatus) => {
+  const receivedAmount = amountToMinorUnits(providerStatus.gross_amount);
   const expectedAmount = BigInt(reservation.estimatedTotal) * 100n;
   if (receivedAmount === null || receivedAmount !== expectedAmount) {
-    throw ApiError.badRequest("Jumlah notifikasi pembayaran tidak sesuai");
+    throw ApiError.badRequest("Jumlah transaksi Midtrans tidak sesuai");
   }
 
-  const incomingProviderStatus = String(notification.transaction_status || "");
+  const incomingProviderStatus = String(providerStatus.transaction_status || "");
   const mappedStatus = {
     settlement: "paid",
     capture:
-      notification.fraud_status === "accept" ? "paid" : "pending",
+      providerStatus.fraud_status === "accept" ? "paid" : "pending",
     pending: "pending",
     deny: "failed",
     failure: "failed",
@@ -304,7 +312,7 @@ const applyMidtransNotification = async (notification) => {
         paymentStatus: "paid",
         paymentProviderStatus: incomingProviderStatus,
         midtransTransactionId:
-          notification.transaction_id || reservation.midtransTransactionId,
+          providerStatus.transaction_id || reservation.midtransTransactionId,
         paidAt: reservation.paidAt || now,
       },
     });
@@ -323,7 +331,7 @@ const applyMidtransNotification = async (notification) => {
         paymentStatus: mappedStatus,
         paymentProviderStatus: incomingProviderStatus,
         midtransTransactionId:
-          notification.transaction_id || reservation.midtransTransactionId,
+          providerStatus.transaction_id || reservation.midtransTransactionId,
       },
     });
   }
@@ -331,9 +339,57 @@ const applyMidtransNotification = async (notification) => {
   return { received: true };
 };
 
+const applyMidtransNotification = async (notification) => {
+  if (!verifyNotificationSignature(notification)) {
+    throw ApiError.unauthorized("Signature notifikasi Midtrans tidak valid");
+  }
+
+  const reservation = await prisma.clinicReservation.findUnique({
+    where: { midtransOrderId: notification.order_id },
+  });
+  if (!reservation) return { received: true };
+
+  return applyProviderPaymentStatus(reservation, notification);
+};
+
+const refreshReservationPaymentStatus = async (reservationId, userId) => {
+  const reservation = await prisma.clinicReservation.findFirst({
+    where: { id: reservationId, userId },
+    include: { clinic: true },
+  });
+  if (!reservation) throw ApiError.notFound("Reservasi tidak ditemukan");
+  if (
+    reservation.paymentMethod !== "qris" ||
+    reservation.paymentStatus !== "pending"
+  ) {
+    return toReservationResponse(reservation);
+  }
+  if (!reservation.midtransOrderId) {
+    throw ApiError.conflict("Referensi transaksi QRIS belum tersedia");
+  }
+
+  const providerStatus = await getQrisTransactionStatus(
+    reservation.midtransOrderId
+  );
+  if (providerStatus) {
+    if (providerStatus.order_id !== reservation.midtransOrderId) {
+      throw ApiError.badRequest("Referensi transaksi Midtrans tidak sesuai");
+    }
+    await applyProviderPaymentStatus(reservation, providerStatus);
+  }
+
+  const refreshed = await prisma.clinicReservation.findFirst({
+    where: { id: reservationId, userId },
+    include: { clinic: true },
+  });
+  if (!refreshed) throw ApiError.notFound("Reservasi tidak ditemukan");
+  return toReservationResponse(refreshed);
+};
+
 module.exports = {
   applyMidtransNotification,
   createReservation,
   getReservation,
+  refreshReservationPaymentStatus,
   updateReservationAddress,
 };
