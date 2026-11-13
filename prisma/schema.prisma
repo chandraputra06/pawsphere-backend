@@ -42,6 +42,17 @@ enum ReservationStatus {
   cancelled
 }
 
+enum ClinicPaymentStatus {
+  cash_due
+  pending
+  paid
+  partially_refunded
+  failed
+  expired
+  cancelled
+  refunded
+}
+
 // ------------------------------------------------------------
 // CORE: USER
 // ------------------------------------------------------------
@@ -452,6 +463,16 @@ model ClinicReservation {
   status         ReservationStatus @default(pending)
   bookingCode    String            @unique @map("booking_code") @db.VarChar(50)
   queueNumber    String?           @map("queue_number") @db.VarChar(20)
+  paymentMethod          String              @default("cash") @map("payment_method") @db.VarChar(20)
+  paymentStatus          ClinicPaymentStatus @default(cash_due) @map("payment_status")
+  idempotencyKey         String?             @unique @map("idempotency_key") @db.VarChar(100)
+  idempotencyFingerprint String?             @map("idempotency_fingerprint") @db.Char(64)
+  midtransOrderId        String?             @unique @map("midtrans_order_id") @db.VarChar(50)
+  midtransTransactionId  String?             @unique @map("midtrans_transaction_id") @db.VarChar(100)
+  snapToken              String?             @map("snap_token") @db.VarChar(255)
+  snapRedirectUrl        String?             @map("snap_redirect_url") @db.Text
+  paymentProviderStatus  String?             @map("payment_provider_status") @db.VarChar(50)
+  paidAt                 DateTime?           @map("paid_at")
   updatedAt      DateTime          @updatedAt @map("updated_at")
   createdAt      DateTime          @default(now()) @map("created_at")
 
@@ -460,5 +481,6 @@ model ClinicReservation {
 
   @@index([clinicId])
   @@index([userId])
+  @@index([paymentStatus])
   @@map("clinic_reservations")
 }
