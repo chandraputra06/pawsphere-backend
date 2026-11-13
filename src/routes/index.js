@@ -10,6 +10,7 @@ const adoptionRoutes = require("./adoption.route");
 const donationRoutes = require("./donation.route");
 const marketplaceRoutes = require("./marketplace.route");
 const clinicAdminRoutes = require("./clinic-admin.route");
+const clinicReservationRoutes = require("./clinic-reservation.route");
 const adminRoutes = require("./admin.route");
 
 const router = express.Router();
@@ -33,6 +34,7 @@ router.use("/paw-alert", pawAlertRoutes);
 router.use("/adoption", adoptionRoutes);
 router.use("/donation", donationRoutes);
 router.use("/marketplace", marketplaceRoutes);
+router.use("/clinic-bookings", clinicReservationRoutes);
 router.use("/clinic-admin", clinicAdminRoutes);
 router.use("/admin", adminRoutes);
 

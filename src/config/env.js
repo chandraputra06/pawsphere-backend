@@ -21,6 +21,13 @@ const env = {
     guestWindowHours: Number(process.env.GUEST_AI_WINDOW_HOURS) || 24,
   },
 
+  midtrans: {
+    serverKey: process.env.MIDTRANS_SERVER_KEY || "",
+    clientKey: process.env.MIDTRANS_CLIENT_KEY || "",
+    isProduction: process.env.MIDTRANS_IS_PRODUCTION === "true",
+  },
+
+  frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
   corsOrigin: process.env.CORS_ORIGIN || "*",
 };
 

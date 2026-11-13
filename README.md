@@ -4,7 +4,7 @@ Backend API untuk **PawSphere** — Sistem Informasi Platform Layanan Kesehatan 
 
 Dibangun dengan **Express.js**, **MySQL**, dan **Prisma ORM**. Integrasi AI Chat Diagnosa menggunakan **Google Gemini API** dengan _fallback_ otomatis ke mesin triase berbasis kata kunci jika API key tidak tersedia.
 
-> **Status iterasi saat ini:** Foundation + Authentication + AI Chat Diagnosa.
+> **Status iterasi saat ini:** Foundation + Authentication + AI Chat Diagnosa + reservasi klinik dan pembayaran QRIS Sandbox.
 > Modul lain (Vet Connect, Marketplace, Paw Alert, Shelter, Adoption, Care Funding) sudah disiapkan di skema database dan tinggal diimplementasikan secara bertahap.
 
 ---
@@ -226,6 +226,10 @@ Cek cepat lewat browser: buka `http://localhost:3000/api/health`.
 | `JWT_EXPIRES_IN`  | ❌    | `7d`                   | Masa berlaku token                                        |
 | `GEMINI_API_KEY`  | ❌    | _(kosong)_             | Kosong = pakai fallback stub                              |
 | `GEMINI_MODEL`    | ❌    | `gemini-1.5-flash`     | Model Gemini yang dipakai                                 |
+| `MIDTRANS_SERVER_KEY` | Untuk QRIS | —                 | Server Key Sandbox; rahasia dan untuk verifikasi notifikasi |
+| `MIDTRANS_CLIENT_KEY` | Untuk QRIS | —                 | Client Key untuk konfigurasi SDK Midtrans                 |
+| `MIDTRANS_IS_PRODUCTION` | ❌ | `false`              | Harus `false` untuk pengujian Sandbox                     |
+| `FRONTEND_URL`    | ❌    | `http://localhost:5173`| URL frontend untuk redirect selesai Snap                  |
 | `CORS_ORIGIN`     | ❌    | `http://localhost:5173`| Origin frontend yang diizinkan (pisahkan koma jika lebih) |
 
 ---
@@ -255,6 +259,17 @@ Base URL: `http://localhost:3000/api`
 | POST   | `/ai-chat/triage`       | ✅   | Buat triase awal dari gejala hewan        |
 | GET    | `/ai-chat/histories`    | ✅   | Riwayat triase milik user (terbaru dulu)  |
 | GET    | `/ai-chat/histories/:id`| ✅   | Detail satu riwayat triase                |
+
+### Reservasi Klinik & Pembayaran
+
+| Method | Path | Auth | Keterangan |
+| ------ | ---- | ---- | ---------- |
+| POST | `/clinic-bookings/:clinicId/reservations` | ✅ | Membuat reservasi; kirim `Idempotency-Key` berupa UUID v4. Harga dihitung backend. |
+| GET | `/clinic-bookings/reservations/:id` | ✅ | Status reservasi milik pengguna yang sedang login |
+| PATCH | `/clinic-bookings/reservations/:id/address` | ✅ | Menyimpan alamat kunjungan rumah milik pengguna |
+| POST | `/clinic-bookings/midtrans/notification` | ❌* | Webhook Midtrans; signature diverifikasi menggunakan Server Key |
+
+Pilih `paymentMethod: "qris"` untuk checkout Snap Sandbox atau `"cash"` untuk pembayaran tunai. Snap menggunakan channel GoPay untuk alur QRIS; pastikan channel GoPay/QRIS aktif di akun Sandbox dan uji tampilan/scan dengan simulator. Midtrans menyediakan Client Key dan Server Key; Server Key juga dipakai backend untuk memverifikasi signature webhook, sehingga tidak ada `MIDTRANS_SIGNATURE_SECRET` terpisah. Untuk QRIS, set URL webhook Midtrans ke endpoint di atas. Webhook harus dapat diakses dari internet publik; `localhost` saja tidak cukup.
 
 Endpoint ber-`Auth ✅` membutuhkan header:
 

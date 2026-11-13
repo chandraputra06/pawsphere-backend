@@ -29,6 +29,8 @@ const mapReservation = (r) => ({
   status: r.status,
   bookingCode: r.bookingCode,
   queueNumber: r.queueNumber,
+  paymentMethod: r.paymentMethod,
+  paymentStatus: r.paymentStatus,
   createdAt: r.createdAt,
   customer: r.user ? { name: r.user.name, email: r.user.email } : null,
 });
@@ -65,6 +67,14 @@ const updateReservationStatus = async (ownerUserId, reservationId, status) => {
   const reservation = await prisma.clinicReservation.findUnique({ where: { id: reservationId } });
   if (!reservation || reservation.clinicId !== clinic.id) {
     throw ApiError.notFound("Reservasi tidak ditemukan");
+  }
+  if (
+    ["confirmed", "completed"].includes(status) &&
+    !["paid", "cash_due"].includes(reservation.paymentStatus)
+  ) {
+    throw ApiError.conflict(
+      "Reservasi belum dapat dikonfirmasi sebelum pembayaran selesai"
+    );
   }
   const updated = await prisma.clinicReservation.update({
     where: { id: reservationId },
