@@ -21,7 +21,8 @@ const mapTriageToResponse = (row) => ({
   updated_at: row.updatedAt,
 });
 
-// Runs triage (Gemini or stub) and stores the result for the user.
+// Runs triage (Gemini or stub). Stores the result only for logged-in users;
+// guests (userId null) get the analysis without persisting any history.
 const createAiTriage = async ({
   userId,
   animalType,
@@ -37,6 +38,28 @@ const createAiTriage = async ({
     duration,
     additionalCondition,
   });
+
+  // Guest: tidak ada akun -> jangan simpan riwayat, cukup kembalikan hasil.
+  if (!userId) {
+    const now = new Date();
+    return mapTriageToResponse({
+      id: null,
+      userId: null,
+      animalType,
+      age,
+      symptoms,
+      duration,
+      additionalCondition: additionalCondition || null,
+      urgencyLevel: triage.urgencyLevel,
+      summary: triage.summary,
+      firstAidAdvice: triage.firstAidAdvice,
+      recommendation: triage.recommendation,
+      source: triage.source,
+      disclaimer: triage.disclaimer,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
 
   const saved = await prisma.aiTriageHistory.create({
     data: {

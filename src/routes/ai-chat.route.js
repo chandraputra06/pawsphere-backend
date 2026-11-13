@@ -16,14 +16,17 @@ const { guestAiMeter } = require("../middlewares/guest-ai-meter");
 
 const router = express.Router();
 
-// Triage & histories: wajib login.
+// Triage: guest boleh 5 analisa (di-meter), user login unlimited.
 router.post(
   "/triage",
-  authenticate,
+  optionalAuthenticate,
   createTriageValidator,
   validate,
+  guestAiMeter,
   createTriage
 );
+
+// Histories: tetap wajib login (guest tidak punya riwayat tersimpan).
 router.get("/histories", authenticate, getMyTriageHistories);
 router.get("/histories/:id", authenticate, getTriageById);
 

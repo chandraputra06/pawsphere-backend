@@ -7,13 +7,14 @@ const {
   chatWithAi,
 } = require("../services/ai-chat.service");
 
-// POST /api/ai-chat/triage  (requires authentication)
+// POST /api/ai-chat/triage  (guest diizinkan s/d 5 analisa, user login unlimited)
 const createTriage = asyncHandler(async (req, res) => {
   const { animal_type, age, symptoms, duration, additional_condition } =
     req.body;
 
+  // Guest tidak punya akun -> userId null (riwayat tidak disimpan).
   const result = await createAiTriage({
-    userId: req.user.id,
+    userId: req.user?.id || null,
     animalType: animal_type,
     age,
     symptoms,
@@ -21,7 +22,12 @@ const createTriage = asyncHandler(async (req, res) => {
     additionalCondition: additional_condition,
   });
 
-  return successResponse(res, 201, "AI triage generated successfully", result);
+  const guest = res.locals.aiGuest || null; // null utk user login
+
+  return successResponse(res, 201, "AI triage generated successfully", {
+    ...result,
+    guest,
+  });
 });
 
 // GET /api/ai-chat/histories  (requires authentication)
