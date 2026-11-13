@@ -10,6 +10,7 @@ const adoptionRoutes = require("./adoption.route");
 const donationRoutes = require("./donation.route");
 const marketplaceRoutes = require("./marketplace.route");
 const clinicAdminRoutes = require("./clinic-admin.route");
+const adminRoutes = require("./admin.route");
 
 const router = express.Router();
 
@@ -32,25 +33,15 @@ router.use("/paw-alert", pawAlertRoutes);
 router.use("/adoption", adoptionRoutes);
 router.use("/donation", donationRoutes);
 router.use("/marketplace", marketplaceRoutes);
-router.use("/marketplace", marketplaceRoutes);
 router.use("/clinic-admin", clinicAdminRoutes);
+router.use("/admin", adminRoutes);
 
 // ----------------------------------------------------------------
 // EXAMPLE: role-protected endpoints.
 // These show the standard pattern for "membedakan akses per role":
 //   authenticate  -> verifies the JWT and sets req.user (incl. role)
 //   authorize(...) -> allows only the listed roles, else 403
-//
-// The SAME /api/auth/login is used by every role. Differentiation
-// happens here, by guarding each route with the roles it permits.
 // ----------------------------------------------------------------
-
-// Only admins can reach this.
-router.get("/admin/overview", authenticate, authorize("admin"), (req, res) =>
-  successResponse(res, 200, "Admin area", {
-    message: `Halo ${req.user.email}, kamu masuk sebagai admin.`,
-  })
-);
 
 // Only verified vets can reach this.
 router.get("/vet/inbox", authenticate, authorize("vet"), (req, res) =>
