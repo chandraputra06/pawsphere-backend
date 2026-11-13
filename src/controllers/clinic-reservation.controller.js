@@ -4,6 +4,7 @@ const {
   applyMidtransNotification,
   createReservation,
   getReservation,
+  refreshReservationPaymentStatus,
   updateReservationAddress,
 } = require("../services/clinic-reservation.service");
 
@@ -20,6 +21,14 @@ const postReservation = asyncHandler(async (req, res) => {
 const getMyReservation = asyncHandler(async (req, res) => {
   const data = await getReservation(req.params.id, req.user.id);
   return successResponse(res, 200, "Reservation retrieved", data);
+});
+
+const postRefreshReservationPayment = asyncHandler(async (req, res) => {
+  const data = await refreshReservationPaymentStatus(
+    req.params.id,
+    req.user.id
+  );
+  return successResponse(res, 200, "Payment status refreshed", data);
 });
 
 const patchReservationAddress = asyncHandler(async (req, res) => {
@@ -40,5 +49,6 @@ module.exports = {
   getMyReservation,
   patchReservationAddress,
   postMidtransNotification,
+  postRefreshReservationPayment,
   postReservation,
 };

@@ -78,6 +78,20 @@ const createQrisRedirect = async ({ reservation, user, itemDetails }) => {
   }
 };
 
+const getQrisTransactionStatus = async (orderId) => {
+  try {
+    return await getSnapClient().transaction.status(orderId);
+  } catch (error) {
+    if (error.httpStatusCode === 404) return null;
+    console.error("[Midtrans] Failed to retrieve transaction status");
+    throw new ApiError(
+      502,
+      "Tidak dapat memeriksa status pembayaran dari Midtrans.",
+      "payment-provider-error"
+    );
+  }
+};
+
 const verifyNotificationSignature = (notification) => {
   const secret = env.midtrans.serverKey;
   if (!secret) {
@@ -124,5 +138,6 @@ const amountToMinorUnits = (value) => {
 module.exports = {
   amountToMinorUnits,
   createQrisRedirect,
+  getQrisTransactionStatus,
   verifyNotificationSignature,
 };

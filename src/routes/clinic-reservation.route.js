@@ -10,6 +10,7 @@ const {
   getMyReservation,
   patchReservationAddress,
   postMidtransNotification,
+  postRefreshReservationPayment,
   postReservation,
 } = require("../controllers/clinic-reservation.controller");
 
@@ -28,6 +29,13 @@ router.get(
   reservationIdValidator,
   validate,
   getMyReservation
+);
+router.post(
+  "/reservations/:id/refresh-payment",
+  authenticate,
+  reservationIdValidator,
+  validate,
+  postRefreshReservationPayment
 );
 router.patch(
   "/reservations/:id/address",
